@@ -117,7 +117,7 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 - There's no login or authentication yet. Roles only switch in the UI. Add auth before deploying anywhere public.
 - For a Vercel deploy, set `DATABASE_URL` in the project's environment variables. Use the Supabase connection string (currently commented out in `.env.local`).
   - Use the **Transaction pooler** (port `6543`) for serverless; the Session pooler (5432) runs out of connections.
-  - No `vercel.json` is needed; Vercel detects Next.js.
+  - `vercel.json` sets `framework: nextjs`. The Vercel project was still on the static preset from the `index.html` days, so builds failed with `STATIC_BUILD_NO_OUT_DIR` (no `public` folder) until 2026-10-17.
 - Row-level saves still overwrite a row if two users edit the same record at once (last write wins per row). The browser also doesn't see other users' changes until a reload.
 - The empty-data change was only partly checked in the browser. Not yet checked with no data: gradebook, timetable, fees, library, notices, calendar and reports.
 - None of the recent work is committed to git yet (branch `main`). Make sure `.env.local` stays out of commits; `.gitignore` covers `.env*.local`.
