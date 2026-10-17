@@ -1,6 +1,7 @@
-// Creates the database named in DATABASE_URL (if missing) and the school_data table.
+// Creates the database named in DATABASE_URL (if missing) and all the tables.
 // Run with: npm run db:init
 import pg from 'pg';
+import { SCHEMA } from '../lib/schema.mjs';
 
 const url = new URL(process.env.DATABASE_URL);
 url.searchParams.delete('sslmode');
@@ -21,24 +22,6 @@ if (dbName !== 'postgres'){
 
 const c2 = new pg.Client({ connectionString: url.toString(), ssl });
 await c2.connect();
-await c2.query(`CREATE TABLE IF NOT EXISTS school_data (
-  id int PRIMARY KEY,
-  data jsonb NOT NULL,
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE IF NOT EXISTS students (
-  id text PRIMARY KEY,
-  code text NOT NULL UNIQUE,
-  name text NOT NULL,
-  gender text NOT NULL DEFAULT 'Female',
-  dob date,
-  class_id text,
-  status text NOT NULL DEFAULT 'Active',
-  guardian text NOT NULL DEFAULT '',
-  phone text NOT NULL DEFAULT '',
-  address text NOT NULL DEFAULT '',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-)`);
-console.log('Tables school_data and students are ready');
+await c2.query(SCHEMA);
+console.log('Tables are ready (an old school_data table is migrated when the app first loads)');
 await c2.end();

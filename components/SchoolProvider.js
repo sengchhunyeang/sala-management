@@ -2,14 +2,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ROLES, emptyData, today } from '@/lib/school';
 import { api } from '@/lib/api';
+import { diffRows, flatten } from '@/lib/tables';
 
 const KEY = 'sala-sms-v1';
 const Ctx = createContext(null);
 export const useSchool = () => useContext(Ctx);
-
-// Students are stored in their own table and changed through /api/students,
-// so they are left out of the document save.
-const putData = ({ students, ...rest }) => api('PUT', '/api/data', rest);
 
 export default function SchoolProvider({ children }){
   const [S, setS] = useState(null);
@@ -20,6 +17,7 @@ export default function SchoolProvider({ children }){
   const [toastMsg, setToastMsg] = useState({ text:'', show:false });
   const toastTimer = useRef(null);
   const saving = useRef({ busy:false, next:null });
+  const saved = useRef(null); // flatten() of what the database is known to hold
   const [loadError, setLoadError] = useState(null);
 
   const toast = useCallback(text => {
@@ -28,8 +26,10 @@ export default function SchoolProvider({ children }){
     toastTimer.current = setTimeout(() => setToastMsg(t => ({ ...t, show:false })), 2400);
   }, []);
 
-  // Saves to PostgreSQL one request at a time; if several updates happen while
-  // a save is in flight, only the latest state is sent next.
+  // Saves to PostgreSQL one request at a time, sending only the table rows that
+  // differ from what was last saved (students go through /api/students instead).
+  // If several updates happen while a save is in flight, only the latest state is
+  // compared next. A failed save is retried as part of the next one.
   const persist = useCallback(async data => {
     const q = saving.current;
     q.next = data;
@@ -37,7 +37,9 @@ export default function SchoolProvider({ children }){
     q.busy = true;
     while (q.next){
       const d = q.next; q.next = null;
-      try { await putData(d); }
+      const rows = flatten(d), changes = diffRows(saved.current, rows);
+      if (!Object.keys(changes).length) continue;
+      try { await api('PUT', '/api/data', { changes }); saved.current = rows; }
       catch(e){ toast('Could not save to database: ' + e.message); }
     }
     q.busy = false;
@@ -53,15 +55,16 @@ export default function SchoolProvider({ children }){
           // (the server imports its students into the students table).
           try { const raw = localStorage.getItem(KEY); if (raw) data = JSON.parse(raw); } catch(e){}
           if (!data) data = emptyData();
-          await api('PUT', '/api/data', data);
+          await api('PUT', '/api/data', { import: data });
         }
         data.students = (await api('GET', '/api/students')).students;
+        saved.current = flatten(data);
       } catch(e){ setLoadError(e.message); return; }
       try { const r = localStorage.getItem(KEY+'-role'); if (r && ROLES[r]) setRoleState(r); } catch(e){}
       const TODAY = today();
       ref.current = data;
       setS(data);
-      setUiState({q:'', cls:'', st:'Active', attClass:'', attDate:TODAY, gExam:'', gClass:'', gSub:'Mathematics', ttClass:'', feeF:'', feeQ:'', cal:TODAY.slice(0,7), repExam:''});
+      setUiState({q:'', cls:'', st:'Active', attClass:'', attDate:TODAY, gExam:'', gClass:'', gSub:'Mathematics', ttClass:'', repExam:''});
     })();
   }, []);
 

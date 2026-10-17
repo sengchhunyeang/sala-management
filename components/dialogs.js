@@ -2,13 +2,12 @@
 import { useSchool } from './SchoolProvider';
 import { Badge, ConfirmBody, FormBody, LetterBadge } from './ui';
 import { api } from '@/lib/api';
-import { SUBJECTS, STATUSES, addDays, avgScore, byId, classOpts, classStudents, clsName, fmtDate, iso, money, pct, rateFor, stuName, tName, today, uid } from '@/lib/school';
+import { SUBJECTS, STATUSES, avgScore, byId, classOpts, classStudents, clsName, fmtDate, pct, rateFor, stuName, tName, today, uid } from '@/lib/school';
 
 function StudentProfile({ id }){
   const { S, role, closeModal } = useSchool();
   const d = useDialogs();
   const x = byId(S.students,id); if (!x) return <p className="muted">This student has been removed.</p>;
-  const bal = S.fees.filter(f => f.studentId===id).reduce((a,f)=>a+Math.max(0,f.amount-f.paid),0);
   const att = {P:0,L:0,A:0}; Object.values(S.attendance).forEach(r => { if (r[id]) att[r[id]]++; });
   const exRows = S.exams.map(e => ({e, a:avgScore(S,(ee,s,sid)=>ee===e.id&&sid===id)})).filter(r => r.a!=null);
   return <>
@@ -20,7 +19,6 @@ function StudentProfile({ id }){
     </div>
     <div className="panel" style={{marginBottom:12}}><div className="tally">
       <span><b>{pct(rateFor(S,(d,c,s)=>s===id))}</b>attendance</span><span><b>{att.L}</b>late</span><span><b>{att.A}</b>absent</span>
-      <span><b style={{color:bal?'var(--bad)':'var(--ok)'}}>{money(bal)}</b>fees owed</span>
     </div></div>
     <h3 style={{fontSize:16,margin:'12px 0 8px'}}>Exam results</h3>
     {exRows.length ? <table><thead><tr><th>Exam</th><th className="num">Average</th><th>Grade</th><th></th></tr></thead><tbody>
@@ -61,21 +59,6 @@ function ReportCard({ sid, exId }){
   </>;
 }
 
-function Receipt({ id }){
-  const { S, closeModal } = useSchool();
-  const p = byId(S.payments,id), f = p && byId(S.fees,p.feeId); if (!f) return null;
-  return <>
-    <div className="kv">
-      <div><span>School</span><b>{S.settings.school}</b></div><div><span>Receipt no.</span>{p.id.toUpperCase()}</div>
-      <div><span>Student</span>{stuName(S,f.studentId)}</div><div><span>Class</span>{clsName(S,byId(S.students,f.studentId)?.classId)}</div>
-      <div><span>For</span>{f.item}, {f.term}</div><div><span>Date</span>{fmtDate(p.date)}</div>
-      <div><span>Method</span>{p.method}</div><div><span>Amount paid</span><b>{money(p.amount)}</b></div>
-      <div><span>Balance remaining</span>{money(Math.max(0,f.amount-f.paid))}</div>
-    </div>
-    <div className="factions"><button className="btn primary" onClick={closeModal}>Done</button></div>
-  </>;
-}
-
 export function useDialogs(){
   const { S, openModal, toast, setUi, update } = useSchool();
   const form = (title, fields, values, onSave, submit) => openModal(title, <FormBody key={Math.random()} fields={fields} values={values} onSave={onSave} submit={submit}/>);
@@ -87,7 +70,6 @@ export function useDialogs(){
     form, confirm, confirmAsync,
     stuProfile: id => openModal(stuName(S,id), <StudentProfile id={id}/>),
     reportCard: (sid, exId) => openModal('Report card', <ReportCard sid={sid} exId={exId}/>),
-    receipt: id => openModal('Payment receipt', <Receipt id={id}/>),
     stuForm(id){
       if (!S.classes.length){ toast('Add a class before enrolling students'); return; }
       const x = id && byId(S.students,id);
@@ -110,16 +92,15 @@ export function useDialogs(){
             toast('Student updated');
           } else {
             const { student } = await api('POST', '/api/students', o);
-            update(D => { D.students.push(student);
-              D.fees.push({id:uid('f'), studentId:student.id, term:D.settings.term, item:'Tuition', amount:180, paid:0, due:iso(addDays(new Date(),14))}); });
-            toast('Student enrolled and tuition invoice created');
+            update(D => { D.students.push(student); });
+            toast('Student enrolled');
           }
         } catch(e){ return e.message; }
       };
       openModal(x ? 'Edit student' : 'Enrol a new student',
         <FormBody key={Math.random()} fields={fields} values={x} action={action} submit={x ? 'Save changes' : 'Enrol student'}/>);
     },
-    // Deletes the student row, then their attendance, grades, invoices and loans.
+    // Deletes the student row, then their attendance, grades, and any invoices or library loans left from the removed pages.
     async removeStudent(id){
       try { await api('DELETE', `/api/students/${id}`); }
       catch(e){ if (e.message !== 'Student not found') return e.message; }
@@ -153,22 +134,10 @@ export function useDialogs(){
         {k:'capacity',label:'Capacity',type:'number',def:40,attr:{min:1}}
       ], c, (o, D) => { if (c) Object.assign(byId(D.classes,c.id),o); else D.classes.push({id:uid('c'), grade:Number((o.name.match(/\d+/)||[0])[0]), ...o}); toast(c?'Class updated':'Class added'); }, c?'Save changes':'Add class');
     },
-    bookForm(id){
-      const b = id && byId(S.books,id);
-      form(b?'Edit book':'Add book', [
-        {k:'title',label:'Title',req:true,wide:true},{k:'author',label:'Author',req:true},
-        {k:'category',label:'Category',type:'select',opts:['Textbook','Reference','Science','History','ICT','Fiction','Other']},
-        {k:'copies',label:'Copies',type:'number',def:1,attr:{min:1}}
-      ], b, (o, D) => {
-        if (b){ const db = byId(D.books,b.id); if (o.copies < db.loans.length) return `${db.loans.length} copies are on loan, so copies can't be lower than that`; Object.assign(db,o); }
-        else D.books.push({id:uid('b'),loans:[],...o});
-        toast(b?'Book updated':'Book added');
-      }, b?'Save changes':'Add book');
-    },
     examForm(){
       form('Schedule exam', [
         {k:'name',label:'Exam name',req:true,wide:true},{k:'term',label:'Term',type:'select',opts:['Term 1','Term 2'],def:S.settings.term},{k:'date',label:'Start date',type:'date',req:true}
-      ], null, (o, D) => { const id = uid('e'); D.exams.push({id,...o}); D.events.push({id:uid('v'), title:o.name+' begins', date:o.date, type:'Exam'}); setUi({gExam:id}); toast('Exam scheduled and added to the calendar'); }, 'Schedule exam');
+      ], null, (o, D) => { const id = uid('e'); D.exams.push({id,...o}); setUi({gExam:id}); toast('Exam scheduled'); }, 'Schedule exam');
     }
   };
 }

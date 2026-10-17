@@ -1,6 +1,6 @@
 # Sala School Management
 
-School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, fees and payments, library, notices, calendar, reports and settings. Theme is Forest Green & Copper, with Khmer-friendly fonts.
+School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, reports and settings. Theme is Navy, White & Red (since 2026-10-17; was Forest Green & Copper), with Khmer-friendly fonts. The favicon is `app/icon.svg` (the sidebar's red "ស" mark on navy). In `globals.css` the token names are historical: `--navy*` is navy, `--gold`/`--gold-2` hold the red accent, and `--red` is the deeper danger red.
 
 ## Stack
 - Next.js 16 (App Router, Turbopack), React 19, plain JavaScript (no TypeScript), no CSS framework.
@@ -8,15 +8,11 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 - Commands: `npm run dev` (port 3000), `npm run build`, `npm start`, `npm run db:init` (creates the tables; also creates the database when its name isn't `postgres`).
 - Development is on Windows. Use the PowerShell tool; Git Bash here has no `git` or `head`.
 
-## Database (Supabase PostgreSQL)
-- **Server:** Supabase project `school-management`, ref `stihlplruxeqpdzlvjyk`, region `ap-southeast-2`, PostgreSQL 17.
-  - The app reaches it through the **Session pooler**, `aws-0-ap-southeast-2.pooler.supabase.com:5432`, database `postgres`, user `postgres.stihlplruxeqpdzlvjyk`.
-  - The direct host `db.stihlplruxeqpdzlvjyk.supabase.co` is IPv6-only and can't be reached from this PC.
+## Database (Local PostgreSQL 18)
+- **Server:** PostgreSQL 18 on `localhost:5432`, database `sala_sms`, user `postgres` (password in `.env.local`).
 - **Connection:** `DATABASE_URL` in `.env.local`, which is git-ignored. Never put the password in a committed file.
-  - URL-encode `@ # / :` in the password (`%40 %23 %2F %3A`).
-  - `lib/db.js` turns on SSL automatically for any non-local host and strips `sslmode` from the URL.
-- **Password resets:** resetting the database password in the Supabase dashboard breaks the app until `.env.local` is updated and the dev server is restarted. The `pg` Pool is cached on `globalThis`, so a running server keeps using the old connections.
-  - After a reset, the pooler can take about 30 seconds to accept the new password.
+  - `lib/db.js` turns on SSL automatically for any non-local host and strips `sslmode` from the URL; SSL is off for localhost.
+- **Previous Supabase setup:** Supabase project `school-management`, ref `stihlplruxeqpdzlvjyk`, region `ap-southeast-2` is commented out in `.env.local`. Uncomment and swap to go back to it.
 - **Access path:** browser → Next.js API routes → `pg` Pool (`lib/db.js`, server-only) → Postgres.
   - The app does **not** use `@supabase/supabase-js` or the publishable key.
   - `NEXT_PUBLIC_SUPABASE_URL` and the `sb_publishable_…` key would only matter for Supabase Auth or Storage later.
@@ -24,24 +20,25 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
   - `students`: one row per student. Columns are `id` (text PK), `code` (unique, STU-###), `name`, `gender`, `dob` (date), `class_id`, `status`, `guardian`, `phone`, `address`, `created_at` and `updated_at`.
     - REST CRUD is in `app/api/students/route.js` (GET list, POST create, DELETE all) and `app/api/students/[id]/route.js` (GET, PUT, DELETE).
     - The server assigns `id` and `code`. Code numbering is `max+1` under an advisory lock, so a deleted top code gets reused.
-    - The server validates name, guardian, phone, status, the date format, and that the class exists (classes live in `school_data`). A validation error returns 400; a missing student returns 404.
-    - DATE columns come back as `'YYYY-MM-DD'` strings (type parser 1082).
-  - `school_data`: everything else (settings, teachers, classes, attendance, exams, grades, fees, payments, books, notices, events, timetable) as one JSONB row, id 1.
-    - It's served by `app/api/data/route.js` (GET/PUT), and the whole document is sent on every save.
-    - `saveData` never stores `students`. If a PUT still includes a `students` array (a first-run import from the browser), those rows are imported with `ON CONFLICT DO NOTHING`.
-    - `loadData` moves any legacy inline `students` into the table.
+    - The server validates name, guardian, phone, status, the date format, and that the class exists (in the `classes` table). A validation error returns 400; a missing student returns 404.
+    - DATE columns come back as `'YYYY-MM-DD'` strings (type parser 1082); NUMERIC comes back as JS numbers (1700).
+  - **One table per module** (since 2026-09-27): `settings` (single row, id 1), `teachers`, `classes`, `exams`, `attendance` (PK date+class+student, mark P/L/A), `grades` (PK exam+subject+student, score 0–100), `fees`, `payments` (no UI since 2026-10-17, data kept), `books`, `loans` (with `book_id`), `notices`, `events` (these four have had no UI since 2026-10-17, data kept), `timetable` (PK class+day+period, only non-empty slots).
+    - SQL is in `lib/schema.mjs` (used by `lib/db.js` and `scripts/db-init.mjs`). The field ↔ column map is `TABLES` in `lib/tables.js`; keep the two in sync. No foreign keys: removed records can leave orphans the UI shows as "Removed student" etc.
+    - `lib/tables.js` is shared: `flatten(S)` turns the document into `{table: {key: row}}`, `diffRows(prev, next)` gives `{table: {upsert, delete}}`, and `assemble(rows)` rebuilds the document on load.
+    - `app/api/data/route.js`: GET returns the assembled document (null when `settings` is empty). PUT takes `{changes}` (applied in one transaction, all or nothing) or `{import: document}` for a first run (students included). Unknown tables, missing keys and constraint violations return 400.
+    - Migration: on first use, an old `school_data` JSONB row is copied into the tables and the table is renamed `school_data_legacy` (kept as a backup). Local `sala_sms` was migrated on 2026-09-27; Supabase still has the old `school_data` layout and migrates the first time the app connects to it.
 - **Client:**
   - `lib/api.js` `api(method, url, body)` throws an Error carrying the server's message.
   - `SchoolProvider` loads `/api/data` and `/api/students` and merges the students into `S.students`.
-  - `persist` strips `students` and sends one PUT at a time, sending only the latest state next.
+  - `persist` diffs `flatten(state)` against the last saved `flatten()` and PUTs only the changed rows, one request at a time. The baseline only advances after a successful save, so a failed save is retried with the next change.
   - A failed load sets `loadError`, and `Shell` then shows a "Cannot reach the database" card.
   - A failed save shows a toast.
 - **Student CRUD in the UI:** call the API first, then mirror the server's reply into `S` with `update()`.
   - `stuForm` uses `FormBody`'s async `action` prop.
   - Removing a student uses `d.confirmAsync` plus `d.removeStudent(id)`, which deletes the row and then cleans up that student's fees, payments, attendance, grades and loans in the document.
   - Settings → Clear all data calls `DELETE /api/students` and then resets the document, keeping the settings.
-- **Local fallback:** the old local PostgreSQL 18 database (`sala_sms` on `localhost:5432`, user `postgres`) is still in `.env.local` as `LOCAL_DATABASE_URL`, plus a commented-out `DATABASE_URL`. It's no longer used.
-- **Browser storage:** the role is still kept in `localStorage` (`sala-sms-v1-role`). Old `localStorage` data (`sala-sms-v1`) is imported only when the database has no `school_data` row.
+- **Local database (active for local dev since 2026-09-27):** `.env.local` `DATABASE_URL` points at local PostgreSQL 18 (`sala_sms` on `localhost:5432`, user `postgres`); the Supabase URL is commented out just above it. Swap the `#` to go back to Supabase and restart the dev server. The two databases are not synced: at the switch, local had 3 students and Supabase had 5. Vercel still needs the Supabase URL (port 6543).
+- **Browser storage:** the role is still kept in `localStorage` (`sala-sms-v1-role`). Old `localStorage` data (`sala-sms-v1`) is imported only when the database has no `settings` row.
 - **Testing:** create, edit and delete only your own clearly named test rows (for example "ZZ Test …"). Never pick "the first row"; see the History entry below.
 ## Structure
 - `app/layout.js`: fonts, `SchoolProvider`, `Shell`.
@@ -58,7 +55,8 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 - `components/ui.js`: `Badge`, `LetterBadge`, `Icon`, `Options`, `Bars` (SVG bar chart), `DataTable` (a `#` prefix on a heading means a numeric column), `FormBody`, `ConfirmBody`.
   - `FormBody` takes either a sync `onSave(values, D)` or an async `action(values)` that resolves to an error string or nothing. `ConfirmBody` takes either `fn(D)` or an async `action()`. Both disable their button while busy.
 - `lib/school.js`: date and money helpers, constants (`DAYS`, `PERIODS`, `SUBJECTS`, `STATUSES`, `PAGES`, `ROLES`, `ICONS`), `emptyData()`, and selectors that take `S` first (`rateFor`, `avgScore`, `feeStatus`, `latestExam`, …). It's shared by the client and the server; `lib/db.js` imports `STATUSES`.
-- `lib/db.js`: server-only Postgres access (Pool, schema, `loadData`/`saveData`, student CRUD, `importStudents`, `ValidationError`).
+- `lib/db.js`: server-only Postgres access (Pool, legacy migration, `loadData`/`saveChanges`/`importDocument`, student CRUD, `importStudents`, `ValidationError`).
+- `lib/tables.js`: table map and `flatten`/`diffRows`/`assemble` (client and server). `lib/schema.mjs`: the `CREATE TABLE` SQL.
 - `lib/api.js`: the browser fetch helper.
 - `app/api/data/route.js`, `app/api/students/route.js`, `app/api/students/[id]/route.js`: API routes (`dynamic = 'force-dynamic'`).
 - `scripts/db-init.mjs`: `npm run db:init`, run with `node --env-file=.env.local`.
@@ -103,17 +101,23 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
   - Encryption was confirmed on this PC's side (TLS 1.3). The `pg_stat_ssl` check reports false through the pooler, and that's expected.
   - Checked in the Supabase Table Editor: both tables are present, with the user's students.
   - At the end of the session the database had 4 students (STU-001 to STU-004, the latest one "ContentPlan", added by the user), 1 class ("Grade 10A", real data), 1 teacher and 5 invoices.
+- **2026-09-27**: Switched local dev to the local `sala_sms` database and split every module into its own table.
+  - Added `lib/tables.js` and `lib/schema.mjs`; `/api/data` now takes changed rows instead of the whole document.
+  - The running dev server migrated `sala_sms` as soon as the code changed (the user had the app open); `school_data` became `school_data_legacy`. Counts matched the old document (settings, 1 teacher, 1 class, 3 invoices).
+  - Verified: an API test that writes, updates and deletes a "zz" row in every table (plus bad mark, score > 100 and unknown table → 400, and rollback on failure) left the database exactly as before; unit tests of `diffRows` for remove student, timetable, grade clear and Clear all data; production build; all 13 pages load. Not yet clicked through in a browser.
+- **2026-09-27 (session 2)**: Switched back to local PostgreSQL for development.
+  - The user provided local database credentials (PostgreSQL 18, `localhost:5432`, user `postgres`, database `sala_sms`). `.env.local` already had these as the active `DATABASE_URL`.
+  - Commented out the Supabase connection string in `.env.local`; it can be restored by swapping the comments.
+  - Full codebase review: read every file (all 30+ source files) to understand the architecture, data flow, component structure, and database schema end to end. Updated the Database section of this file to reflect the local setup.
+
+- **2026-10-17**: Retheme to Navy, White & Red, with a favicon (`app/icon.svg`). Removed the Fees & payments feature from the UI: the `/fees` page, the nav entry, the Accountant role's access, the dashboard fee stat and overdue to-do, the Reports fee chart, the student profile balance, the receipt dialog, the auto tuition invoice on enrolment, and `feeStatus`. The `fees`/`payments` tables, the `TABLES` mapping and the 3 invoices are kept on purpose, so the data still loads and the feature can come back. `removeStudent` still cleans up a student's invoices. Production build passed.
+- **2026-10-17**: Removed the whole Operations group (Library, Notices, Calendar) from the UI the same way: the routes, nav entries, role access, `bookForm`, `overdueLoans`, the dashboard's library to-do, Latest notices and Coming up panels, the sidebar library count, the `cal` UI state and the `.notice`/`.cal`/`.ev` styles. Scheduling an exam no longer adds a calendar event, and the dashboard's next-exam link now goes to `/gradebook`. The `books`, `loans`, `notices` and `events` tables and their `TABLES` mapping are kept. Production build passed.
 
 ## Open items
-- **Security, not yet done:** Row Level Security (RLS) is off on `students` and `school_data`, and the Table Editor shows "Add RLS policy". Anyone with the project URL and the publishable key (which was shared in chat) may be able to read and write these tables through Supabase's Data API.
-  - Proposed fix: `ALTER TABLE students ENABLE ROW LEVEL SECURITY; ALTER TABLE school_data ENABLE ROW LEVEL SECURITY;` with no policies. The app connects as `postgres`, which bypasses RLS, so it keeps working.
-  - Waiting for the user to say yes.
-- The DB password was pasted in chat. Consider resetting it once more and putting the new one straight into `.env.local`, then restarting the dev server.
-- There's no login or authentication yet. Roles only switch in the UI. Add auth before deploying anywhere public. Supabase Auth is an option, and it would use `NEXT_PUBLIC_SUPABASE_URL` and the publishable key.
-- For a Vercel deploy, set `DATABASE_URL` in the project's environment variables.
-  - Use the **Transaction pooler** there: the same URL as `.env.local` but with port `6543`. Serverless instances each open their own `pg` Pool, and the Session pooler (5432) runs out of connections. 6543 was tested with the app's credentials and its `pg_advisory_xact_lock`, and both work.
+- There's no login or authentication yet. Roles only switch in the UI. Add auth before deploying anywhere public.
+- For a Vercel deploy, set `DATABASE_URL` in the project's environment variables. Use the Supabase connection string (currently commented out in `.env.local`).
+  - Use the **Transaction pooler** (port `6543`) for serverless; the Session pooler (5432) runs out of connections.
   - No `vercel.json` is needed; Vercel detects Next.js.
-- Other modules (teachers, classes, attendance, grades, fees, library, notices, calendar, timetable) still live in the single `school_data` JSONB document. Saves are last-write-wins across users. The same pattern as students could split them out one module at a time.
+- Row-level saves still overwrite a row if two users edit the same record at once (last write wins per row). The browser also doesn't see other users' changes until a reload.
 - The empty-data change was only partly checked in the browser. Not yet checked with no data: gradebook, timetable, fees, library, notices, calendar and reports.
-- The dev server was started from the Claude session, so it stops when the session ends. Run `npm run dev` yourself.
-- The Next.js conversion was committed and pushed to `origin/main` (github.com/sengchhunyeang/sala-management) on 2026-09-27. Make sure `.env.local` stays out of commits; `.gitignore` covers `.env*.local`.
+- None of the recent work is committed to git yet (branch `main`). Make sure `.env.local` stays out of commits; `.gitignore` covers `.env*.local`.

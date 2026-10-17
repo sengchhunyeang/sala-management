@@ -40,8 +40,8 @@ export default function Settings(){
       <p className="small" style={{marginTop:0}}>Switch roles at the bottom of the sidebar to preview what each person sees.</p>
       <ul className="todo small">
         <li><span className="dot"></span><div><b>Admin</b> can use every module, including settings and staff records.</div></li>
-        <li><span className="dot g"></span><div><b>Teacher</b> sees students, classes, attendance, grades, timetable, library, notices and calendar.</div></li>
-        <li><span className="dot r"></span><div><b>Accountant</b> sees students, fees and payments, reports, notices and calendar.</div></li>
+        <li><span className="dot g"></span><div><b>Teacher</b> sees students, classes, attendance, grades and timetable.</div></li>
+        <li><span className="dot r"></span><div><b>Accountant</b> sees students and reports.</div></li>
       </ul>
     </div>
     <div className="panel"><h3>Data</h3>

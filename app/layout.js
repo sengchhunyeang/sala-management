@@ -8,7 +8,7 @@ const display = Bricolage_Grotesque({ subsets:['latin'], axes:['opsz'], variable
 
 export const metadata = {
   title: 'Sala School Management',
-  description: 'Students, attendance, grades, fees and more for Sala Secondary School.'
+  description: 'Students, attendance, grades and more for Sala Secondary School.'
 };
 
 export default function RootLayout({ children }){

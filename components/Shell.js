@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useSchool } from './SchoolProvider';
 import { Icon } from './ui';
-import { PAGES, ROLES, feeStatus, href, overdueLoans, pageFromPath, unmarkedToday } from '@/lib/school';
+import { PAGES, ROLES, href, pageFromPath, unmarkedToday } from '@/lib/school';
 
 function Modal(){
   const { modal, closeModal } = useSchool();
@@ -49,7 +49,7 @@ export default function Shell({ children }){
   </div></div>;
   if (!S || !ui) return <div className="app" />;
 
-  const counts = {attendance: unmarkedToday(S).length, fees: S.fees.filter(f => feeStatus(f)==='Overdue').length, library: overdueLoans(S).length};
+  const counts = {attendance: unmarkedToday(S).length};
   let grp = null;
   const nav = [];
   PAGES.filter(p => ROLES[role].includes(p[0])).forEach(([id,text,g]) => {
