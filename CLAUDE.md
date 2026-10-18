@@ -60,6 +60,7 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 - `lib/api.js`: the browser fetch helper.
 - `app/api/data/route.js`, `app/api/students/route.js`, `app/api/students/[id]/route.js`: API routes (`dynamic = 'force-dynamic'`).
 - `scripts/db-init.mjs`: `npm run db:init`, run with `node --env-file=.env.local`.
+- Swagger (students API only): `lib/openapi.js` is the OpenAPI 3 spec, served as JSON at `/api/openapi`. `app/api-docs/route.js` serves Swagger UI at `/api-docs` (a route handler, so it renders outside the Shell; it loads `swagger-ui-dist` from unpkg). Update the spec when the student routes or `clean()` change.
 
 ## Data model notes
 - Attendance is keyed `"YYYY-MM-DD|classId"` and maps to `{studentId: 'P'|'L'|'A'}`.
@@ -112,6 +113,9 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 
 - **2026-10-17**: Retheme to Navy, White & Red, with a favicon (`app/icon.svg`). Removed the Fees & payments feature from the UI: the `/fees` page, the nav entry, the Accountant role's access, the dashboard fee stat and overdue to-do, the Reports fee chart, the student profile balance, the receipt dialog, the auto tuition invoice on enrolment, and `feeStatus`. The `fees`/`payments` tables, the `TABLES` mapping and the 3 invoices are kept on purpose, so the data still loads and the feature can come back. `removeStudent` still cleans up a student's invoices. Production build passed.
 - **2026-10-17**: Removed the whole Operations group (Library, Notices, Calendar) from the UI the same way: the routes, nav entries, role access, `bookForm`, `overdueLoans`, the dashboard's library to-do, Latest notices and Coming up panels, the sidebar library count, the `cal` UI state and the `.notice`/`.cal`/`.ev` styles. Scheduling an exam no longer adds a calendar event, and the dashboard's next-exam link now goes to `/gradebook`. The `books`, `loans`, `notices` and `events` tables and their `TABLES` mapping are kept. Production build passed.
+
+## Deploy
+- Follow `DEPLOY.md`: run `npm run build`, commit, then `git push origin main`. Vercel builds every push to `main`.
 
 ## Open items
 - There's no login or authentication yet. Roles only switch in the UI. Add auth before deploying anywhere public.
