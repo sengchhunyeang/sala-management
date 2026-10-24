@@ -1,6 +1,6 @@
 # Sala School Management
 
-School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, reports and settings. Theme is Navy, White & Red (since 2026-10-17; was Forest Green & Copper), with Khmer-friendly fonts. The logo (since 2026-10-24) comes from `LogoSchool.jpg` in the root, a 123RF stock preview with watermarks that needs a licence or a replacement before public use. Crops: `app/icon.png` (favicon), `app/apple-icon.png`, `public/logo-mark.png` (sidebar `.mark`, emblem only) and `public/logo.png` (emblem plus "SCHOOL", on the database-error card). The old `app/icon.svg` ("ស" on navy) was removed. In `globals.css` the token names are historical: `--navy*` is navy, `--gold`/`--gold-2` hold the red accent, and `--red` is the deeper danger red.
+School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, reports and settings. Theme is Navy, White & Red (since 2026-10-17; was Forest Green & Copper), with Khmer-friendly fonts. The favicon is `app/icon.svg` (the sidebar's red "ស" mark on navy). A stock logo (`LogoSchool.jpg`, a watermarked 123RF preview, kept out of git) was tried on 2026-10-24 in commit `35c62b3` and reverted the same day at the user's request. In `globals.css` the token names are historical: `--navy*` is navy, `--gold`/`--gold-2` hold the red accent, and `--red` is the deeper danger red.
 
 ## Stack
 - Next.js 16 (App Router, Turbopack), React 19, plain JavaScript (no TypeScript), no CSS framework.
