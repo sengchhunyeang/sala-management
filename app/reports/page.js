@@ -1,7 +1,7 @@
 'use client';
 import { useSchool } from '@/components/SchoolProvider';
 import { useDialogs } from '@/components/dialogs';
-import { Bars, Options } from '@/components/ui';
+import { Bars, Options, usePager } from '@/components/ui';
 import { SUBJECTS, avgScore, byId, clsName, latestExam, letter, pct, rateFor } from '@/lib/school';
 
 export default function Reports(){
@@ -17,6 +17,7 @@ export default function Reports(){
   const actives = S.students.filter(s=>s.status==='Active');
   const ranked = actives.map(s => ({s, a:avgScore(S,(e,sub,sid)=>e===ex&&sid===s.id)})).filter(x=>x.a!=null).sort((a,b)=>b.a-a.a);
   const risk = actives.map(s => ({s, att:rateFor(S,(dd,c,sid)=>sid===s.id), a:avgScore(S,(e,sub,sid)=>e===ex&&sid===s.id)})).filter(x => (x.att!=null&&x.att<.85) || (x.a!=null&&x.a<pass));
+  const riskPage = usePager(risk);
   const bad = {color:'var(--bad)',fontWeight:600};
   return <>
     <div className="bar"><label className="field">Exam for academic reports<select value={ex} onChange={e => setUi({repExam:e.target.value})}><Options list={S.exams.map(e=>[e.id,e.name])}/></select></label></div>
@@ -30,10 +31,10 @@ export default function Reports(){
       </tbody></table></div> : <p className="muted">No scores yet.</p>}</div>
       <div className="panel"><h3>Students who may need support</h3><p className="small muted" style={{marginTop:-6}}>Attendance below 85% or an exam average below the pass mark.</p>
         {risk.length ? <div className="scroll"><table><thead><tr><th>Student</th><th>Class</th><th className="num">Attendance</th><th className="num">Average</th></tr></thead><tbody>
-          {risk.map(x => <tr key={x.s.id}><td><button className="link" onClick={() => d.stuProfile(x.s.id)}>{x.s.name}</button></td><td>{clsName(S,x.s.classId)}</td>
+          {riskPage.rows.map(x => <tr key={x.s.id}><td><button className="link" onClick={() => d.stuProfile(x.s.id)}>{x.s.name}</button></td><td>{clsName(S,x.s.classId)}</td>
             <td className="num" style={x.att!=null&&x.att<.85?bad:undefined}>{pct(x.att)}</td>
             <td className="num" style={x.a!=null&&x.a<pass?bad:undefined}>{x.a==null?'—':x.a.toFixed(1)}</td></tr>)}
-        </tbody></table></div> : <p className="muted">No students flagged.</p>}
+        </tbody></table></div> : <p className="muted">No students flagged.</p>}{riskPage.pager}
       </div>
     </div>
   </>;

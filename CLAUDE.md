@@ -1,6 +1,6 @@
 # Sala School Management
 
-School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, reports and settings. Theme is Navy, White & Red (since 2026-10-17; was Forest Green & Copper), with Khmer-friendly fonts. The favicon is `app/icon.svg` (the sidebar's red "ស" mark on navy). In `globals.css` the token names are historical: `--navy*` is navy, `--gold`/`--gold-2` hold the red accent, and `--red` is the deeper danger red.
+School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, reports and settings. Theme is Navy, White & Red (since 2026-10-17; was Forest Green & Copper), with Khmer-friendly fonts. The logo (since 2026-10-24) comes from `LogoSchool.jpg` in the root, a 123RF stock preview with watermarks that needs a licence or a replacement before public use. Crops: `app/icon.png` (favicon), `app/apple-icon.png`, `public/logo-mark.png` (sidebar `.mark`, emblem only) and `public/logo.png` (emblem plus "SCHOOL", on the database-error card). The old `app/icon.svg` ("ស" on navy) was removed. In `globals.css` the token names are historical: `--navy*` is navy, `--gold`/`--gold-2` hold the red accent, and `--red` is the deeper danger red.
 
 ## Stack
 - Next.js 16 (App Router, Turbopack), React 19, plain JavaScript (no TypeScript), no CSS framework.
@@ -113,6 +113,8 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 
 - **2026-10-17**: Retheme to Navy, White & Red, with a favicon (`app/icon.svg`). Removed the Fees & payments feature from the UI: the `/fees` page, the nav entry, the Accountant role's access, the dashboard fee stat and overdue to-do, the Reports fee chart, the student profile balance, the receipt dialog, the auto tuition invoice on enrolment, and `feeStatus`. The `fees`/`payments` tables, the `TABLES` mapping and the 3 invoices are kept on purpose, so the data still loads and the feature can come back. `removeStudent` still cleans up a student's invoices. Production build passed.
 - **2026-10-17**: Removed the whole Operations group (Library, Notices, Calendar) from the UI the same way: the routes, nav entries, role access, `bookForm`, `overdueLoans`, the dashboard's library to-do, Latest notices and Coming up panels, the sidebar library count, the `cal` UI state and the `.notice`/`.cal`/`.ev` styles. Scheduling an exam no longer adds a calendar event, and the dashboard's next-exam link now goes to `/gradebook`. The `books`, `loans`, `notices` and `events` tables and their `TABLES` mapping are kept. Production build passed.
+
+- **2026-10-24**: On a new PC (no local Postgres, no `.env.local`), connected to **Neon** (project `snowy-art-18666136`, branch `production`, `ap-southeast-1`, pooled host, database `neondb`). `.env.local` now holds only the Neon `DATABASE_URL`. `lib/db.js` and `db-init.mjs` now strip both `sslmode` and `channel_binding` via `URL` parsing (Neon URLs carry both). Neon started empty; Supabase and the old PC's local data were not copied. Verified: `db:init`, production build, and students API create/read/update/delete (plus a 400 and a 404) on a "ZZ Neon Test" row, then deleted.
 
 ## Deploy
 - Follow `DEPLOY.md`: run `npm run build`, commit, then `git push origin main`. Vercel builds every push to `main`.

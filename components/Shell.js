@@ -43,6 +43,7 @@ export default function Shell({ children }){
   useEffect(() => { if (S) document.title = label + ' – ' + S.settings.school; }, [S, label]);
 
   if (loadError) return <div className="app"><div className="card" style={{margin:'40px auto', maxWidth:520}}>
+    <img src="/logo.png" alt="School logo" width="120" height="120" style={{display:'block',margin:'0 auto 12px'}}/>
     <h3>Cannot reach the database</h3>
     <p className="small">{loadError}</p>
     <p className="small">Check that PostgreSQL is running and that DATABASE_URL in .env.local is correct, then reload.</p>
@@ -63,7 +64,7 @@ export default function Shell({ children }){
     <div className="app">
       <aside className={`side ${sideOpen?'open':''}`} aria-label="Main navigation">
         <div className="brand">
-          <div className="mark" aria-hidden="true">ស</div>
+          <img className="mark" src="/logo-mark.png" alt="" width="42" height="42"/>
           <div><div className="bname">{S.settings.school}</div><div className="bsub">Academic year {S.settings.year}</div></div>
         </div>
         <nav>{nav}</nav>

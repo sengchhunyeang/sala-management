@@ -5,6 +5,7 @@ import { SCHEMA } from '../lib/schema.mjs';
 
 const url = new URL(process.env.DATABASE_URL);
 url.searchParams.delete('sslmode');
+url.searchParams.delete('channel_binding');
 const dbName = url.pathname.slice(1);
 // Hosted databases (e.g. Supabase) need SSL; a local server does not.
 const ssl = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ? false : { rejectUnauthorized: false };

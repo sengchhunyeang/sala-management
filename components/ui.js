@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { Children, cloneElement, isValidElement, useState } from 'react';
 import { useSchool } from './SchoolProvider';
 import { ICONS, letter } from '@/lib/school';
 
@@ -28,12 +28,45 @@ export function Bars({ data, max=100, fmt=v=>v, color='var(--navy-ink)' }){
   </svg></div>;
 }
 
-export const DataTable = ({ heads, rows, empty='Nothing here yet.' }) => (
-  <div className="tablewrap"><div className="scroll"><table>
-    <thead><tr>{heads.map((h,i) => <th key={i} className={h.startsWith('#')?'num':''}>{h.replace(/^#/,'')}</th>)}</tr></thead>
-    <tbody>{rows.length ? rows : <tr><td colSpan={heads.length} className="empty">{empty}</td></tr>}</tbody>
-  </table></div></div>
-);
+// Splits rows into pages of PAGE; `pager` is the page footer, or false when
+// everything fits on one page. The page is clamped when the list shrinks
+// (a filter or a delete), so it never points past the end.
+const PAGE = 10;
+export function usePager(rows){
+  const [page, setPage] = useState(1);
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE)), p = Math.min(page, pages);
+  return { rows: rows.slice((p-1)*PAGE, p*PAGE), pager: rows.length > PAGE && <Pager page={p} pages={pages} total={rows.length} go={setPage}/> };
+}
+
+function Pager({ page, pages, total, go }){
+  // First, last and the pages next to the current one; gaps become "…".
+  const nums = Array.from({length:pages}, (_,i) => i+1).filter(n => n===1 || n===pages || Math.abs(n-page) <= 1);
+  return <nav className="pager" aria-label="Pages">
+    <span className="small muted">Showing {(page-1)*PAGE+1}–{Math.min(page*PAGE, total)} of {total}</span>
+    <div>
+      <button className="btn sm ghost" disabled={page===1} onClick={() => go(page-1)}>‹ Prev</button>
+      {nums.map((n,i) => <span key={n} style={{display:'contents'}}>
+        {i>0 && n-nums[i-1]>1 && <span className="muted">…</span>}
+        <button className={`btn sm ${n===page?'on':'ghost'}`} aria-current={n===page?'page':undefined} onClick={() => go(n)}>{n}</button>
+      </span>)}
+      <button className="btn sm ghost" disabled={page===pages} onClick={() => go(page+1)}>Next ›</button>
+    </div>
+  </nav>;
+}
+
+// Each cell gets its column name as data-label, so on phones the CSS can show
+// every row as a card of "label  value" lines (see .stack in globals.css).
+const labelCells = (tr, labels) => cloneElement(tr, {},
+  Children.toArray(tr.props.children).map((td, i) => isValidElement(td) ? cloneElement(td, {'data-label': labels[i] ?? ''}) : td));
+
+export function DataTable({ heads, rows, empty='Nothing here yet.' }){
+  const { rows: shown, pager } = usePager(rows);
+  const labels = heads.map(h => h.replace(/^#/,''));
+  return <div className="tablewrap stack"><div className="scroll"><table>
+    <thead><tr>{heads.map((h,i) => <th key={i} className={h.startsWith('#')?'num':''}>{labels[i]}</th>)}</tr></thead>
+    <tbody>{rows.length ? shown.map(tr => labelCells(tr, labels)) : <tr><td colSpan={heads.length} className="empty">{empty}</td></tr>}</tbody>
+  </table></div>{pager}</div>;
+}
 
 // Modal body for a data-entry form. onSave(values, draft) mutates the draft;
 // returning a string rejects the save and shows it as a toast.

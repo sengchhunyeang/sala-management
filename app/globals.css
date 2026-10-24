@@ -26,7 +26,7 @@ h1,h2,h3{font-family:var(--display);line-height:1.2;margin:0}
 .app{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:100vh}
 .side{background:var(--navy-2);color:#C3CEE6;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;border-right:4px solid var(--gold);z-index:40}
 .brand{display:flex;gap:12px;align-items:center;padding:22px 20px 18px}
-.mark{width:42px;height:42px;border-radius:10px;background:var(--gold);color:#fff;display:grid;place-items:center;font-size:24px;font-weight:600;flex:none}
+.mark{width:42px;height:42px;border-radius:10px;background:#fff;padding:3px;object-fit:contain;flex:none}
 .bname{font-family:var(--display);font-weight:700;color:#fff;font-size:17px;line-height:1.2}
 .bsub{font-size:12.5px;color:#8B9BBD}
 nav{padding:4px 12px 16px;flex:1}
@@ -48,11 +48,12 @@ nav svg{width:18px;height:18px;flex:none}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:16px}
 .bar .grow{flex:1}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.main{min-width:0}
+.panel,.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
 .panel h3{font-size:16.5px;margin-bottom:12px}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 .panel-head h3{margin:0}
-.cols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:18px}
+.cols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));margin-top:18px}
 .cols.wide-left{grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr)}
 .field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 .field input,.field select{color:var(--ink)}
@@ -84,6 +85,11 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .badge.mute{background:var(--mute-bg);color:var(--muted)}
 .badge.navy{background:var(--navy);color:#fff}
 .empty{padding:28px;text-align:center;color:var(--muted)}
+.pager{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px;padding:10px 12px;border-top:1px solid var(--line)}
+.pager>div{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.pager .btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pager .btn:disabled{opacity:.45;cursor:default;filter:none}
+.panel .pager{padding:10px 0 0}
 .small{font-size:13px}
 .hello{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:end;background:var(--navy);color:#fff;border-radius:12px;padding:24px 26px;position:relative;overflow:hidden}
 .hello::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;border:26px solid var(--gold)}
@@ -91,7 +97,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .hello h2{font-size:clamp(22px,3vw,30px);font-weight:700;max-width:30ch}
 .hello p{margin:0 0 6px;color:#B9C6E2}
 .hello .term{position:relative;z-index:1;background:rgba(255,255,255,.1);border-radius:8px;padding:6px 12px;font-size:14px;margin-right:150px}
-.stats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-top:18px}
+.stats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));margin-top:18px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;border-top:4px solid var(--navy)}
 .stat.g{border-top-color:var(--gold)}.stat.r{border-top-color:var(--red)}.stat.k{border-top-color:var(--navy-3)}
 .stat .v{font-family:var(--display);font-size:34px;font-weight:700;line-height:1.1;margin:4px 0}
@@ -106,7 +112,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 svg .cv{font-size:11px;fill:var(--muted)}
 svg .cl{font-size:11.5px;fill:var(--ink)}
 svg .grid{stroke:var(--line)}
-.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr))}
 .ccard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:6px}
 .ccard h3{font-size:20px}
 .ccard .actions{margin-top:auto;padding-top:10px;display:flex;gap:6px;flex-wrap:wrap}
@@ -124,7 +130,7 @@ svg .grid{stroke:var(--line)}
 .tt td{padding:6px}
 .tt select{width:100%;min-width:120px;font-size:13.5px}
 .tt .teacher{font-size:12px;color:var(--muted);padding:2px 4px 0;min-height:18px}
-.tt th.period{background:var(--navy);color:#fff}
+.tt th.period{background:var(--navy);color:#fff;position:sticky;left:0;z-index:1}
 .modal{position:fixed;inset:0;background:rgba(6,14,28,.6);display:grid;place-items:center;padding:16px;z-index:100}
 .modal[hidden]{display:none}
 .dialog{background:var(--surface);border-radius:12px;width:min(640px,100%);max-height:90vh;overflow:auto;border-top:5px solid var(--gold)}
@@ -142,8 +148,8 @@ svg .grid{stroke:var(--line)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);background:var(--navy-2);color:#fff;padding:10px 18px;border-radius:8px;opacity:0;pointer-events:none;transition:.2s;z-index:200;border-left:4px solid var(--gold);font-size:14px}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media (max-width:900px){
-  .app{grid-template-columns:1fr}
-  .side{position:fixed;left:0;top:0;width:264px;transform:translateX(-105%);transition:transform .2s}
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;left:0;top:0;width:min(264px,85vw);height:100dvh;transform:translateX(-105%);transition:transform .2s}
   .side.open{transform:none}
   .side.open~.scrim{display:block;position:fixed;inset:0;background:rgba(6,14,28,.5);z-index:30}
   .burger{display:inline-flex}
@@ -156,5 +162,53 @@ svg .grid{stroke:var(--line)}
   .hello::before{display:none}
   .grid-form{grid-template-columns:1fr}
   input[type=search]{min-width:0;width:100%}
+}
+/* Tablets and phones: each DataTable row becomes a card of "label  value" lines
+   (cells carry data-label, see DataTable); two cards per row on wider tablets. */
+@media (max-width:900px){
+  .stack thead{display:none}
+  .stack table,.stack tbody,.stack tr,.stack td{display:block;width:100%}
+  .stack tr{padding:10px 14px;border-bottom:1px solid var(--line)}
+  .stack tr:last-child{border-bottom:0}
+  .stack td{border:0;padding:4px 0;text-align:right;overflow:hidden}
+  .stack td::before{content:attr(data-label);float:left;margin-right:12px;color:var(--muted);font-size:13px;line-height:2}
+  .stack td[data-label=""]::before,.stack td:first-child::before{display:none}
+  .stack td:first-child{text-align:left;font-size:15px;padding-bottom:6px}
+  .stack td[data-label=""]:not(:first-child){display:flex;justify-content:flex-end;gap:4px;padding-top:6px}
+  .stack td.empty{text-align:center;padding:24px 0}
+  .stack .icon-btn{border-color:var(--line);padding:6px 14px}
+  .stack .seg{display:flex;width:100%;margin-top:4px}
+}
+@media (min-width:600px) and (max-width:900px){
+  .stack tbody{display:grid;grid-template-columns:1fr 1fr}
+  .stack tr{border-right:1px solid var(--line)}
+  .stack tr:nth-child(2n){border-right:0}
+  .stack tr:nth-last-child(2):nth-child(odd){border-bottom:0}
+  .stack td.empty{grid-column:1/-1}
+}
+/* Phones: filter bars stack, dialogs become sheets. */
+@media (max-width:720px){
+  input,select,textarea{font-size:16px} /* keeps iOS from zooming into fields */
+  .top h1{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .view{padding:14px 12px 40px}
+  .bar{gap:8px}
+  .bar>*{flex:1 1 140px}
+  .bar>.grow:empty{display:none}
+  .bar>.grow{flex-basis:100%}
+  .field input,.field select{width:100%}
+  .panel,.card{padding:14px}
+  .hello{padding:18px}
+  .stat .v{font-size:28px}
+  .tally{gap:8px 14px}
+  .tally .small{margin-left:0!important;flex-basis:100%}
+  .seg button{min-width:0;flex:1;padding:7px 10px}
+  .pager{justify-content:center;text-align:center}
+  .pager>span{flex-basis:100%}
+  .modal{padding:0;place-items:end stretch}
+  .dialog{width:100%;max-height:92dvh;border-radius:14px 14px 0 0}
+  .dhead,.mbody{padding-left:16px;padding-right:16px}
+  .factions{flex-wrap:wrap}
+  .factions .btn{flex:1}
+  .toast{max-width:calc(100% - 24px);text-align:center}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
