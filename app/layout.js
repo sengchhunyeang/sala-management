@@ -8,8 +8,13 @@ const display = Bricolage_Grotesque({ subsets:['latin'], axes:['opsz'], variable
 
 export const metadata = {
   title: 'Sala School Management',
-  description: 'Students, attendance, grades and more for Sala Secondary School.'
+  description: 'Students, attendance, grades and more for Sala Secondary School.',
+  applicationName: 'Sala SMS',
+  appleWebApp: { capable:true, title:'Sala SMS', statusBarStyle:'default' },
 };
+
+// viewport-fit=cover lets the phone tab bar pad itself above the iPhone home indicator.
+export const viewport = { width:'device-width', initialScale:1, viewportFit:'cover', themeColor:'#071A33' };
 
 export default function RootLayout({ children }){
   return (

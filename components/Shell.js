@@ -4,7 +4,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useSchool } from './SchoolProvider';
 import { Icon } from './ui';
+import { InstallHelp, usePwa } from './PwaSetup';
 import { PAGES, ROLES, href, pageFromPath, unmarkedToday } from '@/lib/school';
+
+// Phone bottom bar: the first four of these the role can open, then "More",
+// which opens the sidebar drawer with every page.
+const TABS = [['dashboard','Home'],['students','Students'],['attendance','Attendance'],['gradebook','Grades'],['reports','Reports'],['classes','Classes']];
 
 function Modal(){
   const { modal, closeModal } = useSchool();
@@ -31,9 +36,14 @@ function Modal(){
 }
 
 export default function Shell({ children }){
-  const { S, ui, role, setRole, toast, toastMsg, closeModal, loadError } = useSchool();
+  const { S, ui, role, setRole, toast, toastMsg, openModal, closeModal, loadError } = useSchool();
   const path = usePathname(), router = useRouter();
   const [sideOpen, setSideOpen] = useState(false);
+  const pwa = usePwa();
+  const install = async () => {
+    if (pwa.canPrompt){ if (await pwa.promptInstall()) toast('Sala SMS is installing on this device'); }
+    else openModal('Install Sala SMS', <InstallHelp ios={pwa.ios}/>);
+  };
   const cur = pageFromPath(path);
   const allowed = ROLES[role].includes(cur) && PAGES.some(p => p[0]===cur);
   const label = PAGES.find(x => x[0]===cur)?.[1] || 'Dashboard';
@@ -43,9 +53,12 @@ export default function Shell({ children }){
   useEffect(() => { if (S) document.title = label + ' – ' + S.settings.school; }, [S, label]);
 
   if (loadError) return <div className="app"><div className="card" style={{margin:'40px auto', maxWidth:520}}>
-    <h3>Cannot reach the database</h3>
+    <img src="/logo.png" alt="School logo" width="120" height="120" style={{display:'block',margin:'0 auto 12px'}}/>
+    <h3>Cannot reach the school data</h3>
     <p className="small">{loadError}</p>
-    <p className="small">Check that PostgreSQL is running and that DATABASE_URL in .env.local is correct, then reload.</p>
+    <p className="small">{!navigator.onLine || /Failed to fetch|Load failed|NetworkError/.test(loadError)
+      ? 'You are offline. Connect to the internet, then reload to see school data.'
+      : 'Check that PostgreSQL is running and that DATABASE_URL in .env.local is correct, then reload.'}</p>
   </div></div>;
   if (!S || !ui) return <div className="app" />;
 
@@ -58,12 +71,14 @@ export default function Shell({ children }){
       <Icon id={id}/>{text}{counts[id] ? <span className="count" title="Needs attention">{counts[id]}</span> : null}
     </Link>);
   });
+  const tabs = TABS.filter(([id]) => ROLES[role].includes(id)).slice(0, 4);
+  const inTabs = tabs.some(([id]) => id===cur);
 
   return <>
     <div className="app">
       <aside className={`side ${sideOpen?'open':''}`} aria-label="Main navigation">
         <div className="brand">
-          <div className="mark" aria-hidden="true">ស</div>
+          <img className="mark" src="/logo-mark.png" alt="" width="42" height="42"/>
           <div><div className="bname">{S.settings.school}</div><div className="bsub">Academic year {S.settings.year}</div></div>
         </div>
         <nav>{nav}</nav>
@@ -83,10 +98,22 @@ export default function Shell({ children }){
           </button>
           <h1>{label}</h1>
           <span className="date">{new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span>
+          {!pwa.installed && <button className="btn sm install" onClick={install} title="Install Sala SMS on this device">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Install app
+          </button>}
         </header>
         <main className="view">{allowed ? children : null}</main>
       </div>
     </div>
+    <nav className="tabbar" aria-label="Quick navigation">
+      {tabs.map(([id,text]) => <Link key={id} href={href(id)} className={id===cur?'on':''} aria-current={id===cur?'page':undefined}>
+        <Icon id={id}/>{text}{counts[id] ? <span className="count">{counts[id]}</span> : null}
+      </Link>)}
+      <button className={inTabs?'':'on'} onClick={() => setSideOpen(true)} aria-label="More pages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>More
+      </button>
+    </nav>
     <Modal/>
     <div className={`toast ${toastMsg.show?'show':''}`} role="status" aria-live="polite">{toastMsg.text}</div>
   </>;

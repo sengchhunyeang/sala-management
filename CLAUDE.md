@@ -1,6 +1,6 @@
 # Sala School Management
 
-School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, reports and settings. Theme is Navy, White & Red (since 2026-10-17; was Forest Green & Copper), with Khmer-friendly fonts. The favicon is `app/icon.svg` (the sidebar's red "ស" mark on navy). A stock logo (`LogoSchool.jpg`, a watermarked 123RF preview, kept out of git) was tried on 2026-10-24 in commit `35c62b3` and reverted the same day at the user's request. In `globals.css` the token names are historical: `--navy*` is navy, `--gold`/`--gold-2` hold the red accent, and `--red` is the deeper danger red.
+School management app for Sala Secondary School (Cambodia): students, teachers, classes, attendance, exams and grades, timetable, reports and settings. Theme is Navy, White & Red (since 2026-10-17; was Forest Green & Copper), with Khmer-friendly fonts. The logo comes from `LogoSchool.jpg` in the root (a watermarked 123RF stock preview, kept out of git on purpose; it needs a licence or a replacement before real public use). Crops: `app/icon.png` (favicon), `app/apple-icon.png`, `public/logo-mark.png` (sidebar `.mark`) and `public/logo.png` (database-error card). It was added, reverted to the old "ស" `icon.svg`, and re-added on 2026-10-24 at the user's request. Phones (≤720px) get a bottom tab bar (`.tabbar` in `Shell.js`, `TABS`) with the first four pages the role can open plus "More", which opens the sidebar drawer; the burger is hidden there. Tables become labelled cards at ≤900px (`.stack`). In `globals.css` the token names are historical: `--navy*` is navy, `--gold`/`--gold-2` hold the red accent, and `--red` is the deeper danger red.
 
 ## Stack
 - Next.js 16 (App Router, Turbopack), React 19, plain JavaScript (no TypeScript), no CSS framework.
@@ -61,6 +61,13 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 - `app/api/data/route.js`, `app/api/students/route.js`, `app/api/students/[id]/route.js`: API routes (`dynamic = 'force-dynamic'`).
 - `scripts/db-init.mjs`: `npm run db:init`, run with `node --env-file=.env.local`.
 - Swagger (students API only): `lib/openapi.js` is the OpenAPI 3 spec, served as JSON at `/api/openapi`. `app/api-docs/route.js` serves Swagger UI at `/api-docs` (a route handler, so it renders outside the Shell; it loads `swagger-ui-dist` from unpkg). Update the spec when the student routes or `clean()` change.
+
+## PWA (since 2026-10-24)
+- `app/manifest.js` → `/manifest.webmanifest` (standalone, navy theme, icons in `public/icons/`: 192, 512 and a maskable 512, all cropped from `LogoSchool.jpg`). `layout.js` sets `appleWebApp` and the `viewport` theme colour.
+- `public/sw.js` is hand-written (no plugin; `next-pwa` doesn't work with Turbopack). Cache-first for `/_next/static`, icons and images; network-first for page navigations with a cached fallback; `/api/*` is never cached. Bump `VERSION` in it after changing it. `next.config.mjs` serves it with `no-cache`.
+- `components/PwaSetup.js` `usePwa()` registers the worker in **production builds only** (so `npm run dev` never serves a stale cache) and reports `canPrompt`, `installed` and `ios`. `Shell` puts an "Install app" button in the top bar, hidden when running as the installed app. Click: opens the browser's install prompt (Chrome, Edge, Android); otherwise (iPhone Safari, Firefox) shows `InstallHelp` steps in a modal.
+- Offline, the app shell opens from cache and `Shell` shows "You are offline" instead of the database message. Data can't be read or saved offline.
+- To test: `npm run build` then `npx next start -p 3001` (the dev server on 3000 has no service worker).
 
 ## Data model notes
 - Attendance is keyed `"YYYY-MM-DD|classId"` and maps to `{studentId: 'P'|'L'|'A'}`.
