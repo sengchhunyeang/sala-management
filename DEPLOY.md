@@ -45,6 +45,8 @@ Set these in Vercel → project → Settings → **Environment Variables**:
 | Name | Value |
 |---|---|
 | `DATABASE_URL` | The Supabase **Transaction pooler** connection string, port **6543**: `postgresql://postgres.stihlplruxeqpdzlvjyk:<password>@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres` |
+| `GOOGLE_SITE_VERIFICATION` | Optional. The `content` value of Google Search Console's "HTML tag" verification method (only the code, not the whole `<meta>` tag). Redeploy after setting it. |
+| `SITE_URL` | Optional. Only if the site moves to a custom domain, e.g. `https://sms.example.edu.kh`. |
 
 - Use port 6543, not 5432. The Session pooler (5432) runs out of connections on serverless.
 - URL-encode `@ # / :` in the password as `%40 %23 %2F %3A`.

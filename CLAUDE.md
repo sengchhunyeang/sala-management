@@ -69,6 +69,13 @@ School management app for Sala Secondary School (Cambodia): students, teachers, 
 - Offline, the app shell opens from cache and `Shell` shows "You are offline" instead of the database message. Data can't be read or saved offline.
 - To test: `npm run build` then `npx next start -p 3001` (the dev server on 3000 has no service worker).
 
+## Search engines (since 2026-10-24)
+- Only `/` is meant to be indexed. `lib/site.mjs` has `SITE_URL` (from `SITE_URL`, else Vercel's `VERCEL_PROJECT_PRODUCTION_URL`, else `https://sala-management.vercel.app`) and `PRIVATE_PATHS` (every record page, `/api`, `/api-docs`).
+- `app/robots.js` → `/robots.txt` disallows `PRIVATE_PATHS`; `app/sitemap.js` → `/sitemap.xml` lists only `/`; `next.config.mjs` sends `X-Robots-Tag: noindex, nofollow` on `PRIVATE_PATHS`. Pages show students' and guardians' personal data, so keep new record pages in `PRIVATE_PATHS`.
+- `layout.js` metadata: title template, description, canonical, Open Graph/Twitter (logo image), and `verification.google` from `GOOGLE_SITE_VERIFICATION`, which is read **at build time** (the home page is prerendered), so redeploy after setting it in Vercel.
+- `lib/site.mjs` is `.mjs` because `next.config.mjs` imports it outside the bundler.
+- Editing files with PowerShell 5.1 `Get-Content`/`Set-Content` corrupts UTF-8 (– and … became mojibake) and adds a BOM. Use the Edit tool or Node instead.
+
 ## Data model notes
 - Attendance is keyed `"YYYY-MM-DD|classId"` and maps to `{studentId: 'P'|'L'|'A'}`.
 - Grades are keyed `"examId|Subject|studentId"` and map to a score from 0 to 100.
